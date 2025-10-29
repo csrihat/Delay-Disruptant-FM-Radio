@@ -1,4 +1,4 @@
-# Delay-Disruptant-FM-Radio
+# Delay-Disruptant FM Radio
 Dual-Receiver Delay-Disruptant FM Radio with Active–Passive Failover
 
 ### 1. Objectives
