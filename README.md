@@ -29,3 +29,12 @@ Dual-Receiver Delay-Disruptant FM Radio with Active–Passive Failover
   rtl_eeprom -d 0 -s FM1
   rtl_eeprom -d 1 -s FM2
   # Replug both after programming
+---
+  ### 3. Design 
+```mermaid
+flowchart LR
+  A[RTL-SDR #1] --> E[Prometheus Exporter]
+  B[RTL-SDR #2] --> E
+  E --> P[Prometheus]
+  P --> G[GNU Radio Flowgraph]
+  G --> S[Audio Output]
