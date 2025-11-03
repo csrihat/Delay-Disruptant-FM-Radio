@@ -10,17 +10,17 @@ Dual-Receiver Delay-Disruptant FM Radio with Active–Passive Failover
 
 ### 2. Requirements
 #### Hardware
-- **Raspberry Pi 5** (8 GB) — host platform for all containers.  
+- **Raspberry Pi 5** (8 GB) - host platform for all containers.  
 - **2 × RTL-SDR Blog V4 (R828D + RTL2832U, 1 PPM TCXO)** dongles  
   - Supported by `rtl_sdr`, `pyrtlsdr`, and `gr-osmosdr`.  
   - Each includes a dipole antenna kit for FM reception.  
   - Identical models ensure matched frequency and RSSI comparison.  
 
 #### Software
-- **Docker & Docker Compose** — all components must run in containers.  
+- **Docker & Docker Compose** - all components must run in containers.  
 - **Python (Prometheus RSSI Exporter)**  
-- **Prometheus** — for metric collection and monitoring.  
-- **GNU Radio** — WBFM demodulator flowgraph with controllable source selector.  
+- **Prometheus** - for metric collection and monitoring.  
+- **GNU Radio** - WBFM demodulator flowgraph with controllable source selector.  
 - *(Optional)* **Alertmanager** and **Grafana** for alerting and visualization.
 
 #### Configuration
