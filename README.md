@@ -31,10 +31,62 @@ Dual-Receiver Delay-Disruptant FM Radio with Active–Passive Failover
   # Replug both after programming
 ---
   ### 3. Design 
-```mermaid
-flowchart LR
-  A[RTL-SDR #1] --> E[Prometheus Exporter]
-  B[RTL-SDR #2] --> E
-  E --> P[Prometheus]
-  P --> G[GNU Radio Flowgraph]
-  G --> S[Audio Output]
+graph TB
+    subgraph Hardware["Hardware Layer"]
+        RTL1["RTL-SDR #1<br/>Serial: FM1"]
+        RTL2["RTL-SDR #2<br/>Serial: FM2"]
+    end
+    
+    subgraph Exporter["RSSI Exporter - Python :9100"]
+        POLL["Read Signal Strength<br/>SoapySDR/pyrtlsdr"]
+        THRESHOLD["Threshold & Debounce<br/>≥8dB drop for ≥300ms"]
+        METRICS["5 Metrics:<br/>rssi | active_rx | switch_events | threshold | gap"]
+    end
+    
+    subgraph Monitoring["Monitoring"]
+        PROM["Prometheus<br/>Scrape: 250ms"]
+        GRAFANA["Grafana<br/>Dashboard"]
+    end
+    
+    subgraph Processing["Audio Processing"]
+        CONTROLLER["Failover<br/>Controller"]
+        GNURADIO["GNU Radio<br/>WBFM + Hot-switch"]
+        AUDIO["Audio Output"]
+    end
+    
+    RTL1 -->|"RSSI Data"| POLL
+    RTL2 -->|"RSSI Data"| POLL
+    
+    POLL --> THRESHOLD
+    POLL --> METRICS
+    
+    METRICS -->|"Port 9100"| PROM
+ 
+    PROM --> GRAFANA
+    
+    THRESHOLD -->|"Breach Detected"| CONTROLLER
+    
+    CONTROLLER -->|"Switch"| GNURADIO
+
+    RTL1 -->|"Active Audio"| GNURADIO
+    RTL2 -->|"Standby Audio"| GNURADIO
+    
+    GNURADIO --> AUDIO
+    
+    CONTROLLER -.->|"Log Events"| METRICS
+    
+    style Hardware fill:#ffffff,stroke:#000000,stroke-width:2px
+    style Exporter fill:#ffffff,stroke:#000000,stroke-width:2px
+    style Monitoring fill:#ffffff,stroke:#000000,stroke-width:2px
+    style Processing fill:#ffffff,stroke:#000000,stroke-width:2px
+    
+    style RTL1 fill:#ffffff,stroke:#000000,stroke-width:2px
+    style RTL2 fill:#ffffff,stroke:#000000,stroke-width:2px
+    style POLL fill:#ffffff,stroke:#000000,stroke-width:2px
+    style THRESHOLD fill:#ffffff,stroke:#000000,stroke-width:2px
+    style METRICS fill:#ffffff,stroke:#000000,stroke-width:2px
+    style PROM fill:#ffffff,stroke:#000000,stroke-width:2px
+    style GRAFANA fill:#ffffff,stroke:#000000,stroke-width:2px
+    style GNURADIO fill:#ffffff,stroke:#000000,stroke-width:2px
+    style CONTROLLER fill:#ffffff,stroke:#000000,stroke-width:2px
+    style AUDIO fill:#ffffff,stroke:#000000,stroke-width:2px
