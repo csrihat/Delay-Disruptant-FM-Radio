@@ -31,6 +31,7 @@ Dual-Receiver Delay-Disruptant FM Radio with Active–Passive Failover
   # Replug both after programming
 ---
   ### 3. Design 
+```mermaid
 graph TB
     subgraph Hardware["Hardware Layer"]
         RTL1["RTL-SDR #1<br/>Serial: FM1"]
