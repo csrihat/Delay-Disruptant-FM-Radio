@@ -6,6 +6,38 @@ This project implements a dual-receiver delay-disruptant FM radio using two RTL-
 
 The focus of this implementation is on **signal-level failover control and observability**; audio playback is not required for validation and is left as future work.
 
+## Requirements
+
+### Functional Requirements
+- The system reads RSSI values from two RTL-SDR receivers (FM1 and FM2).
+- The system compares FM1 RSSI against a fixed threshold of **-65 dBm**.
+- If FM1 RSSI stays below **-65 dBm** for at least **1.0 second**, the system switches the active receiver from FM1 to FM2.
+- When FM2 is active and FM1 RSSI rises back to **-65 dBm or higher**, the system switches the active receiver back to FM1.
+- The exporter exposes metrics for:
+  - `fm_rssi_dbm{receiver="FM1|FM2"}`
+  - `fm_active_receiver{receiver="FM1|FM2"}`
+  - `fm_switch_events_total{from_receiver, to_receiver}`
+- Prometheus can scrape these metrics, and Grafana visualizes RSSI, active receiver state, and switch events.
+
+### Non-Functional Requirements
+- Failover behavior must avoid obviously unstable behavior (e.g., switching many times per second).
+- The system should remain stable during continuous monitoring.
+- All components run together via Docker Compose.
+
+### Constraints
+- Only two RTL-SDR Blog V4 devices are used.
+- Real FM audio output is not implemented in this version.
+- System runs entirely on a standard computer using Docker.
+
+### Acceptance Criteria
+- Both receivers show valid RSSI values at `/metrics`.
+- Failover happens when FM1 stays below -65 dBm for about a second.
+- The system switches back once FM1 comes back above the threshold.
+- Grafana shows RSSI and the switch events correctly.
+- Prometheus scrapes the exporter normally at the 250 ms interval.
+
+
+
 
 ## Architecture
 ```
@@ -54,7 +86,63 @@ The focus of this implementation is on **signal-level failover control and obser
            └────────────────────┘
              
 ```
+## Failover Logic
+```
+                 ┌──────────────────────────┐
+                 │   Poll RSSI (250 ms)     │
+                 │  FM1_RSSI / FM2_RSSI     │
+                 └─────────────┬────────────┘
+                               │
+                               ▼
+                 ┌──────────────────────────┐
+                 │ Is FM1_RSSI < -65 dBm ?  │
+                 └───────┬──────────────────┘
+                         │
+          ┌──────────────┴──────────────┐
+          │                             │
+         No                            Yes
+          │                             │
+          ▼                             ▼
+ ┌──────────────────────┐     ┌──────────────────────────┐
+ │ Stay on current      │     │ Start / continue          │
+ │ active receiver      │     │ low-RSSI timer            │
+ └─────────┬────────────┘     └────────────┬──────────────┘
+           │                                │
+           ▼                                ▼
+ ┌──────────────────────┐       ┌─────────────────────────────┐
+ │ Reset low-RSSI timer │       │ Has FM1_RSSI been < -65 dBm │
+ │ (condition cleared)  │       │ for ≥ 1.0 sec ?              │
+ └─────────┬────────────┘       └──────────────┬──────────────┘
+           │                                     │
+           ▼                                     ▼
+        (loop)                              ┌───────────────┐
+                                            │ FAILOVER to   │
+                                            │ FM2           │
+                                            │ - Update      │
+                                            │   metrics     │
+                                            │ - Increment   │
+                                            │   counter     │
+                                            └───────┬───────┘
+                                                    │
+                                                    ▼
+                                 ┌──────────────────────────┐
+                                 │ While FM2 active:        │
+                                 │ Check FM1_RSSI ≥ -65 dBm │
+                                 └─────────────┬────────────┘
+                                               │
+                               ┌───────────────┴──────────────┐
+                               │                              │
+                              No                             Yes
+                               │                              │
+                               ▼                              ▼
+                   ┌──────────────────────┐      ┌────────────────────────┐
+                   │ Stay on FM2          │      │ RECOVERY to FM1        │
+                   │ (FM1 still too weak) │      │ - Update metrics       │
+                   └──────────────────────┘      │ - Increment counter    │
+                                                 └────────────────────────┘
 
+
+```
 ### How It Works
 
 
@@ -163,6 +251,8 @@ user: admin
 
 pass: admin
 
+SKIP
+
 
 ## Metrics Exposed
 
@@ -195,7 +285,25 @@ pass: admin
    - `fm_switch_events_total{from_receiver="FM1", to_receiver="FM2"}` increments  
    - RSSI graph and Active Receiver panel update in real time
 
-This validates that the RSSI-based failover logic is functioning correctly.
+
+## Verification & Validation (V&V)
+
+### Verification
+
+- RSSI values for both FM1 and FM2 show up correctly at the `/metrics` endpoint.
+- The system switches to FM2 when FM1 stays below -65 dBm for about one second.
+- When FM1’s signal comes back above the threshold, the active receiver switches back to FM1.
+- The exporter exposes the expected metrics (RSSI, active receiver, switch counter).
+- Prometheus is able to scrape the exporter at the configured interval (250 ms).
+- Grafana displays the RSSI values and failover activity as intended.
+- All components run properly inside Docker without build or startup issues.
+
+### Validation
+
+- When FM1’s antenna is obstructed or signal drops, the failover to FM2 happens consistently.
+- When FM1 recovers, the system switches back normally without rapid back-and-forth switching.
+- The system ran for extended periods without crashes or unstable behavior.
+- The Grafana dashboard clearly reflects RSSI trends and each switch event, making the system easy to monitor during testing.
 
 
 ## Troubleshooting
