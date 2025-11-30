@@ -55,6 +55,30 @@ The focus of this implementation is on **signal-level failover control and obser
              
 ```
 
+### How It Works
+
+
+1. The exporter reads RSSI from both RTL-SDR receivers.
+2. Prometheus scrapes RSSI every 250 ms.
+3. If FM1 RSSI < threshold for longer than the debounce interval:
+   - The exporter signals GNU Radio to switch to FM2.
+4. GNU Radio updates the active receiver source.
+5. Metrics update immediately:
+   - `fm_active_receiver`
+   - `fm_switch_events_total`
+6. Grafana visualizes these changes in real time.
+
+
+## Configuration
+
+The exporter currently uses the following internal parameters:
+
+| Parameter | Description | Default Source                  |
+|----------|-------------|---------------------------------|
+| `ACTIVE_RECEIVER` | Initial active receiver (`FM1` or `FM2`) | Environment variable or `'FM1'` |
+| `fm_rssi_threshold_dbm` | RSSI threshold used for failover | Set at `-65`                    |
+| `debounce_seconds` | Time RSSI must remain below threshold before switching | Set at `1.0` seconds            |
+
 
 ## Prerequisites
 
@@ -75,6 +99,23 @@ The focus of this implementation is on **signal-level failover control and obser
   - numpy
   - requests
   - pyrtlsdr
+
+## Project Structure
+```bash
+  Delay-Disruptant-FM-Radio/
+├── exporter/
+│   ├── exporter.py
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── gnuradio/
+│   ├── fm_failover.py
+│   └── Dockerfile
+│
+├── docker-compose.yml
+├── prometheus.yml
+└── README.md
+```
 
 
 ## Quick Start
