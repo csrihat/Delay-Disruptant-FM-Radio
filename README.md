@@ -81,7 +81,7 @@ The focus of this implementation is on **signal-level failover control and obser
 
 ### Step 1: Clone the repository
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/csrihat/Delay-Disruptant-FM-Radio
 cd fm-radio
 ```
 
