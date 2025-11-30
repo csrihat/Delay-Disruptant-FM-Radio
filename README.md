@@ -112,9 +112,18 @@ The exporter currently uses the following internal parameters:
 │   ├── fm_failover.py
 │   └── Dockerfile
 │
+├── grafana/
+│   └── provisioning/
+│       └── dashboards/
+│           ├── dashboard.yml
+│           └── fm_dual_receiver.json
+│
+├── prometheus/
+│   └── prometheus.yml
+│
 ├── docker-compose.yml
-├── prometheus.yml
 └── README.md
+
 ```
 
 
