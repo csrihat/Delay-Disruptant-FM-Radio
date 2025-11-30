@@ -4,7 +4,7 @@
 
 This project implements a dual-receiver delay-disruptant FM radio using two RTL-SDR devices with an active–passive failover design. The system continuously monitors RSSI (received signal strength) from the primary receiver and automatically switches to the backup receiver when the signal drops below a defined threshold.
 
-The focus of this implementation is on **signal-level failover control and observability**; audio playback is not required for validation and is left as future work.
+The focus of this implementation is on **signal-level failover control and observability**; audio playback is not required for validation.
 
 ## Requirements
 
@@ -16,7 +16,9 @@ The focus of this implementation is on **signal-level failover control and obser
 - The exporter exposes metrics for:
   - `fm_rssi_dbm{receiver="FM1|FM2"}`
   - `fm_active_receiver{receiver="FM1|FM2"}`
-  - `fm_switch_events_total{from_receiver, to_receiver}`
+  - `fm_switch_events_total{from_receiver="FM1", to_receiver="FM2"}`
+  - `fm_switch_events_total{from_receiver="FM2", to_receiver="FM1"}`
+  - `fm_rssi_threshold_dbm`
 - Prometheus can scrape these metrics, and Grafana visualizes RSSI, active receiver state, and switch events.
 
 ### Non-Functional Requirements
@@ -171,7 +173,7 @@ The exporter currently uses the following internal parameters:
 ## Prerequisites
 
 ### Hardware
-- **2× RTL-SDR Blog V4** (R828D + RTL2832U, 1 PPM TCXO) dongles
+- **2× RTL-SDR Blog V4** (R828D RTL2832U, 1 PPM TCXO) dongles
   - Supported by rtl_sdr, pyrtlsdr, and gr-osmosdr
   - Each includes a dipole antenna kit for FM reception
   - Identical models ensure matched frequency and RSSI comparison
@@ -256,12 +258,12 @@ SKIP
 
 ## Metrics Exposed
 
-| Metric                                                           | Description | Example |
-|------------------------------------------------------------------|-------------|---------|
-| `fm_rssi_dbm{receiver="FM1\|FM2"}`                               | Signal strength in dBm | -45.2   |
-| `fm_active_receiver{receiver="FM1\|FM2"}`                        | Active (1) or Standby (0) | 1       |
-| `fm_switch_events_total{from_receiver="FM1", to_receiver="FM2"}` | Total failover switches | 5       |
-| `fm_rssi_threshold_dbm`                                          | Configured threshold | -65     |
+| Metric                                               | Description | Example |
+|------------------------------------------------------|-------------|---------|
+| `fm_rssi_dbm{receiver="FM1\|FM2"}`                   | Signal strength in dBm | -45.2   |
+| `fm_active_receiver{receiver="FM1\|FM2"}`            | Active (1) or Standby (0) | 1       |
+| `fm_switch_events_total{from_receiver, to_receiver}` | Total failover switches | 5       |
+| `fm_rssi_threshold_dbm`                              | Configured threshold | -65     |
 
 
 ## Testing Failover
