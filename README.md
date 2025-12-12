@@ -6,23 +6,28 @@ This project implements a dual-receiver delay-disruptant FM radio using two RTL-
 
 The focus of this implementation is on **signal-level failover control and observability**; audio playback is not required for validation.
 
+For testing, the exporter supports controlled RSSI simulation to produce repeatable failover behavior without relying on unpredictable RF conditions.
+
+
 ## Requirements
 
 ### Functional Requirements
+
 - The system reads RSSI values from two RTL-SDR receivers (FM1 and FM2).
-- The system compares FM1 RSSI against a fixed threshold of **-65 dBm**.
-- If FM1 RSSI stays below **-65 dBm** for at least **1.0 second**, the system switches the active receiver from FM1 to FM2.
-- When FM2 is active and FM1 RSSI rises back to **-65 dBm or higher**, the system switches the active receiver back to FM1.
+- The system compares FM1 RSSI against a fixed threshold of -65 dBm.
+- If FM1 RSSI stays below -65 dBm for at least 1.0 second, the system switches the active receiver from FM1 to FM2.
+- When FM2 is active and FM1 RSSI rises back to -65 dBm or higher, the system switches the active receiver back to FM1 once the low-RSSI condition clears.
 - The exporter exposes metrics for:
-  - `fm_rssi_dbm{receiver="FM1|FM2"}`
-  - `fm_active_receiver{receiver="FM1|FM2"}`
-  - `fm_switch_events_total{from_receiver="FM1", to_receiver="FM2"}`
-  - `fm_switch_events_total{from_receiver="FM2", to_receiver="FM1"}`
-  - `fm_rssi_threshold_dbm`
-- Prometheus can scrape these metrics, and Grafana visualizes RSSI, active receiver state, and switch events.
+  - fm_rssi_dbm{receiver="FM1|FM2"}
+  - fm_active_receiver{receiver="FM1|FM2"}
+  - fm_switch_events_total{from_receiver="FM1", to_receiver="FM2"}
+  - fm_switch_events_total{from_receiver="FM2", to_receiver="FM1"}
+  - fm_rssi_threshold_dbm
+- Prometheus scrapes these metrics, and Grafana visualizes RSSI, active receiver state, and switch events.
+
 
 ### Non-Functional Requirements
-- Failover behavior must avoid obviously unstable behavior (e.g., switching many times per second).
+- Failover stability is achieved using a hold-down (debounce) timer to prevent rapid switching during brief signal fluctuations.
 - The system should remain stable during continuous monitoring.
 - All components run together via Docker Compose.
 
@@ -89,6 +94,7 @@ The focus of this implementation is on **signal-level failover control and obser
              
 ```
 ## Failover Logic
+This implementation relies on a hold-down timer for stability and does not implement a separate hysteresis margin.
 ```
                  ┌──────────────────────────┐
                  │   Poll RSSI (250 ms)     │
@@ -148,15 +154,15 @@ The focus of this implementation is on **signal-level failover control and obser
 ### How It Works
 
 
-1. The exporter reads RSSI from both RTL-SDR receivers.
-2. Prometheus scrapes RSSI every 250 ms.
-3. If FM1 RSSI < threshold for longer than the debounce interval:
-   - The exporter signals GNU Radio to switch to FM2.
-4. GNU Radio updates the active receiver source.
-5. Metrics update immediately:
-   - `fm_active_receiver`
-   - `fm_switch_events_total`
-6. Grafana visualizes these changes in real time.
+The exporter reads RSSI values for both receivers (FM1 and FM2).
+Prometheus scrapes RSSI metrics every 250 ms.
+If FM1 RSSI remains below the configured threshold for longer than the debounce interval:
+- The exporter triggers a failover by signaling GNU Radio to switch the active receiver to FM2.
+The exporter updates metrics immediately:
+- fm_active_receiver
+- fm_switch_events_total
+Prometheus scrapes the updated metrics, and Grafana visualizes the changes in real time.
+
 
 
 ## Configuration
@@ -176,7 +182,7 @@ The exporter currently uses the following internal parameters:
 - **2× RTL-SDR Blog V4** (R828D RTL2832U, 1 PPM TCXO) dongles
   - Supported by rtl_sdr, pyrtlsdr, and gr-osmosdr
   - Each includes a dipole antenna kit for FM reception
-  - Identical models ensure matched frequency and RSSI comparison
+  - Identical models reduce variability and simplify relative RSSI comparison.
 - **2× FM antennas** (included with RTL-SDR Blog V4)
 
 ### Software 
