@@ -54,43 +54,41 @@ For testing, the exporter supports controlled RSSI simulation to produce repeata
            └─────────┬──────────┘
                      │
                      ▼
-              [RSSI Measurement]
-                     │
-                     ▼
            ┌────────────────────┐
            │ Prometheus Exporter│
-           │  - RSSI (FM1/FM2)  │
-           │  - Active Receiver │
-           │  - Switch Counter  │
-           └─────────┬──────────┘
-                     │      (metrics)
-          Prometheus Scrape (250ms)
-                     │
-                     ▼
-      ┌──────────────────────────────┐
-      │          Prometheus          │
-      └──────────────────────────────┘
-                     │
-                     ▼
-      ┌──────────────────────────────┐
-      │           Grafana            │
-      │ - RSSI graph (FM1/FM2)       │
-      │ - Active receiver indicator  │
-      │ - Failover counter           │
-      └──────────────────────────────┘
-                     ▲
-           control (REST/env/ZMQ)
-                     │
-           ┌─────────┴──────────┐
-           │    GNU Radio       │
-           │   (Source switch)  │
-           └────────────────────┘
-                     ▲
-                     │
-           ┌────────────────────┐
-           │    RTL-SDR #2      │
-           │ (Backup / Passive) │
-           └────────────────────┘
+           │  - RSSI (FM1/FM2)  │◄──────────┐
+           │  - Active Receiver │           │
+           │  - Switch Counter  │           │
+           └─────────┬──────────┘           │
+                     │      (metrics)       │
+          Prometheus Scrape (250ms)          │
+                     │                      │
+                     ▼                      │
+      ┌──────────────────────────────┐      │
+      │          Prometheus          │      │
+      └──────────────────────────────┘      │
+                     │                      │
+                     ▼                      │
+      ┌──────────────────────────────┐      │
+      │           Grafana            │      │
+      │ - RSSI graph (FM1/FM2)       │      │
+      │ - Active receiver indicator  │      │
+      │ - Failover counter           │      │
+      └──────────────────────────────┘      │
+                                            │
+                           control (env / IPC / ZMQ)
+                                            │
+                                    ┌───────▼────────┐
+                                    │    GNU Radio   │
+                                    │ (Source switch)│
+                                    └───────┬────────┘
+                                            │
+                                            ▼
+                               ┌────────────────────┐
+                               │    RTL-SDR #2      │
+                               │ (Backup / Passive) │
+                               └────────────────────┘
+
              
 ```
 ## Failover Logic
@@ -246,11 +244,13 @@ fm_active_receiver{receiver="FM1"} 1
 ```
 
 ### Step 4: Open Prometheus
-```bash
+```text
+Open a browser and navigate to:
 http://localhost:9090
 ```
 ### Step 5: Open Grafana
-```bash
+```text
+Open a browser and navigate to:
 http://localhost:3000
 ```
 Default login:
@@ -259,17 +259,15 @@ user: admin
 
 pass: admin
 
-SKIP
 
-
-## Metrics Exposed
+# Metrics Exposed
 
 | Metric                                               | Description | Example |
 |------------------------------------------------------|-------------|---------|
-| `fm_rssi_dbm{receiver="FM1\|FM2"}`                   | Signal strength in dBm | -45.2   |
-| `fm_active_receiver{receiver="FM1\|FM2"}`            | Active (1) or Standby (0) | 1       |
-| `fm_switch_events_total{from_receiver, to_receiver}` | Total failover switches | 5       |
-| `fm_rssi_threshold_dbm`                              | Configured threshold | -65     |
+| `fm_rssi_dbm{receiver="FM1|FM2"}`                    | RSSI value for each receiver (dBm) | -45.2 |
+| `fm_active_receiver{receiver="FM1|FM2"}`             | Active receiver indicator (1 = active, 0 = standby) | 1 |
+| `fm_switch_events_total{from_receiver, to_receiver}` | Cumulative count of receiver switch events | 5 |
+| `fm_rssi_threshold_dbm`                               | Configured RSSI threshold used for failover | -65 |
 
 
 ## Testing Failover
@@ -307,11 +305,11 @@ SKIP
 - All components run properly inside Docker without build or startup issues.
 
 ### Validation
-
 - When FM1’s antenna is obstructed or signal drops, the failover to FM2 happens consistently.
-- When FM1 recovers, the system switches back normally without rapid back-and-forth switching.
+- When FM1 recovers, the system switches back normally without rapid back-and-forth switching, due to the configured hold-down timer.
 - The system ran for extended periods without crashes or unstable behavior.
 - The Grafana dashboard clearly reflects RSSI trends and each switch event, making the system easy to monitor during testing.
+
 
 
 ## Troubleshooting
