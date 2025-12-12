@@ -8,6 +8,8 @@ The focus of this implementation is on **signal-level failover control and obser
 
 For testing, the exporter supports controlled RSSI simulation to produce repeatable failover behavior without relying on unpredictable RF conditions.
 
+[🎥 Watch Project Demo Video](https://gmuedu-my.sharepoint.com/:v:/r/personal/akatti2_gmu_edu/Documents/!%20Fall%202025/Project%20Video%20Uploads/C%20Srihatakool%20Project%20Demo.mp4?csf=1&web=1&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=pADgYy)
+
 
 ## Requirements
 
