@@ -53,15 +53,13 @@ threshold_gauge.set(THRESHOLD_DBM)
 
 
 def simulate_rssi(base_dbm: float) -> float:
-    """
-    Baseline RSSI model: slow fading + multipath + Gaussian noise.
-    """
+
     t = time.time()
 
-    # Slow fading
+
     fading = 8 * math.sin(t / 180) + 4 * math.sin(t / 47) + 2 * math.sin(t / 13)
 
-    # Multipath short ringing bursts
+
     multipath = (
         6
         * np.sin(2 * np.pi * 15 * t)
@@ -90,7 +88,7 @@ def trigger_switch(new_receiver: str) -> None:
     # Increment directional counter
     switch_counter.labels(from_receiver=old, to_receiver=new_receiver).inc()
 
-    # Log + optional callback to GNU Radio
+
     try:
         requests.post(
             f"http://gnuradio:8080/switch/{new_receiver}",
@@ -186,8 +184,8 @@ def main() -> None:
         # FM2: stable backup
         # ------------------------------------------------------------------
         raw_fm2 = simulate_rssi(BASE_RSSI_FM2)
-        # Floor FM2 above the GOOD margin so it's always a valid backup
-        rssi_fm2 = max(raw_fm2, GOOD_MARGIN_DBM + 1.0)  # e.g. -59 dBm
+
+        rssi_fm2 = max(raw_fm2, GOOD_MARGIN_DBM + 1.0)
 
         # ------------------------------------------------------------------
         # Track how long each receiver has been bad / FM1 has been good
